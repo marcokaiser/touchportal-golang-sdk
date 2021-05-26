@@ -29,23 +29,26 @@ type Client struct {
 	processStop chan bool
 	ready       chan bool
 
-	handlers map[ClientMessageType][]func(event interface{})
+	handlers   map[ClientMessageType][]func(e interface{})
+	processors map[ClientMessageType]func(msg json.RawMessage) (interface{}, error)
 }
 
 func NewClient() *Client {
-	return &Client{
+	c := &Client{
 		incoming:    make(chan []byte, 5),
 		fetchStop:   make(chan bool),
 		processStop: make(chan bool),
 		ready:       make(chan bool),
+		handlers:    make(map[ClientMessageType][]func(event interface{})),
+		processors:  make(map[ClientMessageType]func(msg json.RawMessage) (interface{}, error)),
 	}
+
+	c.registerDefaultMessageProcessors()
+
+	return c
 }
 
 func (c *Client) AddMessageHandler(msgType ClientMessageType, handler func(e interface{})) {
-	if c.handlers == nil {
-		c.handlers = make(map[ClientMessageType][]func(event interface{}))
-	}
-
 	if _, contains := c.handlers[msgType]; !contains {
 		c.handlers[msgType] = []func(event interface{}){}
 	}
@@ -137,7 +140,7 @@ func (c *Client) processIncomingMessages(wg *sync.WaitGroup) {
 	}
 }
 
-func (c *Client) processMessage(msg []byte) {
+func (c *Client) processMessage(msg json.RawMessage) {
 	var m Message
 	err := json.Unmarshal(msg, &m)
 	if err != nil {
@@ -145,33 +148,20 @@ func (c *Client) processMessage(msg []byte) {
 		return
 	}
 
-	var mType ClientMessageType
-	switch mType = ClientMessageType(m.Type); mType {
-	case infoMessageType:
-		var pm InfoMessage
-		err = json.Unmarshal(msg, &pm)
-		if err != nil {
-			log.Printf("unable to marshall message into type %s: %v\n", mType, err)
-		}
-		c.Dispatch(mType, pm)
-	case closePluginMessageType:
-		var pm ClosePluginMessage
-		err = json.Unmarshal(msg, &pm)
-		if err != nil {
-			log.Printf("unable to marshall message into type %s: %v\n", mType, err)
-		}
-		c.Dispatch(mType, pm)
-	case settingsMessageType:
-		var pm SettingsMessage
-		err = json.Unmarshal(msg, &pm)
-		if err != nil {
-			log.Printf("unable to marshall message into type %s: %v\n", mType, err)
-		}
-		c.Dispatch(mType, pm)
-	default:
+	mType := ClientMessageType(m.Type)
+	processor, ok := c.processors[mType]
+	if !ok {
 		log.Printf("type of message \"%s\" not currently handled\n", mType)
-		log.Printf("%s", string(msg))
+		return
 	}
+
+	pm, err := processor(msg)
+	if err != nil {
+		log.Printf("unable to marshall message into type %s: %v\n", mType, err)
+		return
+	}
+
+	c.Dispatch(mType, pm)
 }
 
 func toJson(msg interface{}) []byte {
