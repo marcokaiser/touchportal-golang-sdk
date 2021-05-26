@@ -1,0 +1,31 @@
+{
+  "sdk": 3,
+  "version": 1,
+  "name": "Golang SDK Example",
+  "id": "gsdk",
+  "configuration" : {
+    "colorDark" : "#FF0000",
+    "colorLight" : "#00FF00"
+  },
+  "plugin_start_cmd": "sh %TP_PLUGIN_FOLDER%golang-sdk-example/start.sh",
+  "categories": [
+    {
+      "id": "gsdk01",
+      "name": "Golang SDK Example",
+      "actions": [],
+      "events": [],
+      "states": []
+    }
+  ],
+  "settings": [
+    {
+      "name": "Host",
+      "type": "text"
+    },
+    {
+      "name": "Port",
+      "type": "number",
+      "default": "443"
+    }
+  ]
+}
