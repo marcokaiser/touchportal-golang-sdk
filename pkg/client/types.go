@@ -40,7 +40,7 @@ type InfoMessage struct {
 	Settings      json.RawMessage `json:"settings"`
 }
 
-type PairMessage struct {
+type pairMessage struct {
 	Message
 	Id string `json:"id"`
 }
@@ -50,21 +50,26 @@ type SettingsMessage struct {
 	RawValues json.RawMessage `json:"values"`
 	Values    map[string]interface{}
 }
-type StateUpdateMessage struct {
+
+type stateUpdateMessage struct {
 	Message
 	Id    string `json:"id"`
 	Value string `json:"value"`
 }
 
-func NewPairMessage(id string) *PairMessage {
-	return &PairMessage{
+// NewPairMessage provides a ready to go client.pairMessage that can be sent to
+// TouchPortal as a part of the plugin registration flow.
+func NewPairMessage(id string) *pairMessage {
+	return &pairMessage{
 		Message: Message{Type: MessageTypePair},
 		Id:      id,
 	}
 }
 
-func NewStateUpdateMessage(id string, value string) *StateUpdateMessage {
-	return &StateUpdateMessage{
+// NewStateUpdateMessage provides a ready to go client.stateUpdateMessage that can be sent to
+// TouchPortal.
+func NewStateUpdateMessage(id string, value string) *stateUpdateMessage {
+	return &stateUpdateMessage{
 		Message: Message{Type: MessageTypeStateUpdate},
 		Id:      id,
 		Value:   value,

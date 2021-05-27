@@ -79,6 +79,8 @@ func (p *Plugin) UpdateState(id string, value string) error {
 	return p.client.SendMessage(msg)
 }
 
+// Done provides an unbuffered, blocking, channel that can be used to verify
+// that the Plugin has finished it's run and cleaned up used resources.
 func (p *Plugin) Done() <-chan bool {
 	return p.stopped
 }

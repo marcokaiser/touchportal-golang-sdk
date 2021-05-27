@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 )
 
+// SetMessageProcessor lets you use your own handling of incoming message types.
+// Your provided processor function should turn the provided raw JSON into the interface you're
+// expecting - probably a struct of some sort.
 func (c *Client) SetMessageProcessor(msgType ClientMessageType, processor func(msg json.RawMessage) (interface{}, error)) {
 	c.processors[msgType] = processor
 }

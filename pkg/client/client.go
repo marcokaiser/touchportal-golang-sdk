@@ -95,6 +95,8 @@ func (c *Client) Dispatch(mType ClientMessageType, event interface{}) {
 	}
 }
 
+// SendMessage will send a JSON serialised version of the passed interface{}
+// to TouchPortal, returning an error if it was unable to complete the task
 func (c *Client) SendMessage(m interface{}) error {
 	return c.socket.SendMessage(toJson(m))
 }

@@ -23,6 +23,9 @@ func (p *Plugin) on(event PluginEvent, handler func(event interface{})) {
 	}
 }
 
+// OnAction allows the registration of an event handler to the "action" TouchPortal message.
+// The matching of the actionId parameter to the one sent by TouchPortal is handled for you
+// and your passed handler function will only be executed if it matches.
 func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId string) {
 	p.on(actionEvent, func(e interface{}) {
 		action, ok := e.(client.ActionMessage)
