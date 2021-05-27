@@ -1,9 +1,22 @@
+//go:generate enumer -type=ClientMessageType -json -transform=lower-camel -output types_string.go  -trimprefix MessageType
+
 package client
 
 import "encoding/json"
 
+type ClientMessageType int
+
+const (
+	MessageTypeAction ClientMessageType = iota
+	MessageTypeClosePlugin
+	MessageTypeInfo
+	MessageTypePair
+	MessageTypeSettings
+	MessageTypeStateUpdate
+)
+
 type Message struct {
-	Type string `json:"type"`
+	Type ClientMessageType `json:"type"`
 }
 
 type ActionMessage struct {
@@ -45,14 +58,14 @@ type StateUpdateMessage struct {
 
 func NewPairMessage(id string) *PairMessage {
 	return &PairMessage{
-		Message: Message{Type: "pair"},
+		Message: Message{Type: MessageTypePair},
 		Id:      id,
 	}
 }
 
 func NewStateUpdateMessage(id string, value string) *StateUpdateMessage {
 	return &StateUpdateMessage{
-		Message: Message{Type: "stateUpdate"},
+		Message: Message{Type: MessageTypeStateUpdate},
 		Id:      id,
 		Value:   value,
 	}

@@ -8,6 +8,10 @@ darwin-build:
 	zip -r -X golang-sdk-example.tpp golang-sdk-example
 .PHONY: darwin-build
 
+generate:
+	go generate ./...
+.PHONY: generate
+
 clean:
 	rm -Rvf example/**/build
 .PHONY: clean

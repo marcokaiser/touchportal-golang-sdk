@@ -40,7 +40,7 @@ func main() {
 
 	// add an action handler for our "gsdk_increment_counter" action
 	p.OnAction(func(event client.ActionMessage) {
-		fmt.Printf("Received action: %#v", event)
+		fmt.Printf("Received action: %#v\n", event)
 
 		counter++
 		p.UpdateState("gsdk_counter", fmt.Sprint(counter))

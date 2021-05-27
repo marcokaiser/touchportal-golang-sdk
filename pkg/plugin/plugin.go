@@ -46,8 +46,8 @@ func (p *Plugin) Register() error {
 	wg.Add(1)
 	p.OnInfo(func(event client.InfoMessage) {
 		if event.Settings != nil {
-			p.client.Dispatch("settings", client.SettingsMessage{
-				Message:   client.Message{Type: "settings"},
+			p.client.Dispatch(client.MessageTypeSettings, client.SettingsMessage{
+				Message:   client.Message{Type: client.MessageTypeSettings},
 				RawValues: event.Settings,
 			})
 		}

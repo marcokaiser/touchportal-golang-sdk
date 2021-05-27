@@ -9,10 +9,10 @@ func (c *Client) SetMessageProcessor(msgType ClientMessageType, processor func(m
 }
 
 func (c *Client) registerDefaultMessageProcessors() {
-	c.SetMessageProcessor(actionMessageType, actionMessageProcessor)
-	c.SetMessageProcessor(closePluginMessageType, closePluginProcessor)
-	c.SetMessageProcessor(infoMessageType, infoMessageProcessor)
-	c.SetMessageProcessor(settingsMessageType, settingsMessageProcessor)
+	c.SetMessageProcessor(MessageTypeAction, actionMessageProcessor)
+	c.SetMessageProcessor(MessageTypeClosePlugin, closePluginProcessor)
+	c.SetMessageProcessor(MessageTypeInfo, infoMessageProcessor)
+	c.SetMessageProcessor(MessageTypeSettings, settingsMessageProcessor)
 }
 
 func actionMessageProcessor(msg json.RawMessage) (interface{}, error) {

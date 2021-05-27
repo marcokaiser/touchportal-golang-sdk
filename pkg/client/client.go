@@ -10,17 +10,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-type IsReady bool
-type ClientMessageType string
-
 const (
 	tpPort = 12136
 	tpHost = "127.0.0.1"
-
-	actionMessageType      = ClientMessageType("action")
-	closePluginMessageType = ClientMessageType("closePlugin")
-	infoMessageType        = ClientMessageType("info")
-	settingsMessageType    = ClientMessageType("settings")
 )
 
 type Client struct {

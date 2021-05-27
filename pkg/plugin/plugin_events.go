@@ -17,7 +17,10 @@ const (
 )
 
 func (p *Plugin) on(event PluginEvent, handler func(event interface{})) {
-	p.client.AddMessageHandler(client.ClientMessageType(event), handler)
+	t, err := client.ClientMessageTypeString(string(event))
+	if err == nil {
+		p.client.AddMessageHandler(t, handler)
+	}
 }
 
 func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId string) {
