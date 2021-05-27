@@ -1,3 +1,5 @@
+//go:generate enumer -type=PluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix Event
+
 package plugin
 
 import (
@@ -7,17 +9,17 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 )
 
-type PluginEvent string
+type pluginEvent int
 
 const (
-	actionEvent      = PluginEvent("action")
-	closePluginEvent = PluginEvent("closePlugin")
-	infoEvent        = PluginEvent("info")
-	settingsEvent    = PluginEvent("settings")
+	eventAction pluginEvent = iota
+	eventClosePlugin
+	eventInfo
+	eventSettings
 )
 
-func (p *Plugin) on(event PluginEvent, handler func(event interface{})) {
-	t, err := client.ClientMessageTypeString(string(event))
+func (p *Plugin) on(event pluginEvent, handler func(event interface{})) {
+	t, err := client.ClientMessageTypeString(event.String())
 	if err == nil {
 		p.client.AddMessageHandler(t, handler)
 	}
@@ -27,7 +29,7 @@ func (p *Plugin) on(event PluginEvent, handler func(event interface{})) {
 // The matching of the actionId parameter to the one sent by TouchPortal is handled for you
 // and your passed handler function will only be executed if it matches.
 func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId string) {
-	p.on(actionEvent, func(e interface{}) {
+	p.on(eventAction, func(e interface{}) {
 		action, ok := e.(client.ActionMessage)
 		if !ok {
 			return
@@ -43,7 +45,7 @@ func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId str
 // message. A default handler is already in place to close down the plugin itself but you
 // may wish to add an additional hook so you can carry out other shutdown tasks.
 func (p *Plugin) OnClosePlugin(handler func(event client.ClosePluginMessage)) {
-	p.on(closePluginEvent, func(e interface{}) {
+	p.on(eventClosePlugin, func(e interface{}) {
 		action, ok := e.(client.ClosePluginMessage)
 		if !ok {
 			return
@@ -57,9 +59,9 @@ func (p *Plugin) OnClosePlugin(handler func(event client.ClosePluginMessage)) {
 
 // OnInfo allows the registration of an event handler to the "info" TouchPortal message.
 // As the "info" message is only sent as a part of the registration process it is necessary
-// to register any handlers before plugin.Register function is called.
+// to register any custom handlers before plugin.Register function is called.
 func (p *Plugin) OnInfo(handler func(event client.InfoMessage)) {
-	p.on(infoEvent, func(e interface{}) {
+	p.on(eventInfo, func(e interface{}) {
 		handler(e.(client.InfoMessage))
 	})
 }
@@ -67,7 +69,7 @@ func (p *Plugin) OnInfo(handler func(event client.InfoMessage)) {
 // onSettings sets up the necessary processing to turn a message containing settings
 // into a data structure that can be packed into a user supplied struct.
 func (p *Plugin) onSettings(handler func(event client.SettingsMessage)) {
-	p.on(settingsEvent, func(e interface{}) {
+	p.on(eventSettings, func(e interface{}) {
 		msg, ok := e.(client.SettingsMessage)
 		if !ok {
 			log.Printf("failed to assert event is SettingsMessage: %+v", msg)
