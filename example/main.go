@@ -6,23 +6,55 @@ import (
 	"os"
 	"os/signal"
 
+	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 	"go.acpr.dev/touchportal-golang-sdk/pkg/plugin"
 )
 
 type settings struct {
 	Host string `json:"Host"`
-	Port int    `json:"Port"`
+	Port int    `json:"Port,string"`
+}
+
+var (
+	counter int = 0
+)
+
+// Implement plugin.Settings on your settings struct to receive notification that the
+// settings have been updated.
+func (s *settings) IsUpdated() {
+	fmt.Printf("settings updated: %#v\n", s)
 }
 
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
+	defer shutdownHandling(ctx, cnl)
 
+	p := plugin.NewPlugin(ctx, "gsdk")
+
+	// register settings before calling plugin.Register so we're made aware of the
+	// plugin setting immediately
+	p.Settings(&settings{})
+
+	// registers our plugin with TouchPortal. Blocks until the plugin is ready for use
+	p.Register()
+
+	// add an action handler for our "gsdk_increment_counter" action
+	p.OnAction(func(event client.ActionMessage) {
+		fmt.Printf("Received action: %#v", event)
+
+		counter++
+		p.UpdateState("gsdk_counter", fmt.Sprint(counter))
+	}, "gsdk_increment_counter")
+
+	// if you want an easy way to wait around for the plugin to exit plugin.Done() offers
+	// an unbuffered channel you can watch.
+	<-p.Done()
+}
+
+func shutdownHandling(ctx context.Context, cnl context.CancelFunc) func() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	defer func() {
-		signal.Stop(c)
-		cnl()
-	}()
+
 	go func() {
 		select {
 		case sig := <-c:
@@ -32,12 +64,8 @@ func main() {
 		}
 	}()
 
-	s := &settings{}
-	p := plugin.NewPlugin(ctx, "gsdk")
-	p.Settings(s)
-	p.Register()
-
-	// if you want an easy way to wait around for the plugin to exit plugin.Done() offers
-	// an unbuffered channel you can watch.
-	<-p.Done()
+	return func() {
+		signal.Stop(c)
+		cnl()
+	}
 }

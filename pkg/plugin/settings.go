@@ -8,6 +8,10 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 )
 
+type Settings interface {
+	IsUpdated()
+}
+
 func (p *Plugin) Settings(s interface{}) {
 	rv := reflect.ValueOf(s)
 	if rv.IsNil() || rv.Kind() != reflect.Ptr || rv.Elem().Type().Kind() != reflect.Struct {
@@ -40,6 +44,9 @@ func (p *Plugin) Settings(s interface{}) {
 			log.Panicf("failed to write settings to given settings struct: %v\n", err)
 		}
 
-		log.Printf("received settings: %#v", s)
+		obj, ok := p.settings.(Settings)
+		if ok {
+			obj.IsUpdated()
+		}
 	})
 }

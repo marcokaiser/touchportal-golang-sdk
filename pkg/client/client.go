@@ -17,6 +17,7 @@ const (
 	tpPort = 12136
 	tpHost = "127.0.0.1"
 
+	actionMessageType      = ClientMessageType("action")
 	closePluginMessageType = ClientMessageType("closePlugin")
 	infoMessageType        = ClientMessageType("info")
 	settingsMessageType    = ClientMessageType("settings")
@@ -115,7 +116,6 @@ func (c *Client) fetchIncomingMessage(wg *sync.WaitGroup) {
 			return
 		default:
 			msg, err := c.socket.GetMessage()
-
 			if err != nil {
 				log.Fatalf("the connection has been lost with touchportal. exiting...")
 			}

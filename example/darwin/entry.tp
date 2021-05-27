@@ -4,17 +4,33 @@
   "name": "Golang SDK Example",
   "id": "gsdk",
   "configuration" : {
-    "colorDark" : "#FF0000",
-    "colorLight" : "#00FF00"
+    "colorDark" : "#7C40EB",
+    "colorLight" : "#AF90E8"
   },
   "plugin_start_cmd": "sh %TP_PLUGIN_FOLDER%golang-sdk-example/start.sh",
   "categories": [
     {
       "id": "gsdk01",
       "name": "Golang SDK Example",
-      "actions": [],
+      "actions": [
+        {
+          "id": "gsdk_increment_counter",
+          "name": "Increment counter",
+          "prefix": "Golang SDK Example",
+          "type": "communicate",
+          "tryInline": "true",
+          "format": "Increment counter"
+        }
+      ],
       "events": [],
-      "states": []
+      "states": [
+        {
+          "id": "gsdk_counter",
+          "type": "text",
+          "desc": "GSDK Counter",
+          "default": ""
+        }
+      ]
     }
   ],
   "settings": [

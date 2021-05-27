@@ -60,10 +60,8 @@ func (p *Plugin) Register() error {
 	})
 
 	p.OnClosePlugin(func(event client.ClosePluginMessage) {
-		if event.PluginId == p.Id {
-			log.Println("touchportal requested plugin shutdown. quitting...")
-			p.client.Close()
-		}
+		log.Println("touchportal requested plugin shutdown. quitting...")
+		p.client.Close()
 	})
 
 	err := p.client.SendMessage(client.NewPairMessage(p.Id))
@@ -73,6 +71,12 @@ func (p *Plugin) Register() error {
 
 	wg.Wait()
 	return nil
+}
+
+func (p *Plugin) UpdateState(id string, value string) error {
+	msg := client.NewStateUpdateMessage(id, value)
+
+	return p.client.SendMessage(msg)
 }
 
 func (p *Plugin) Done() <-chan bool {
