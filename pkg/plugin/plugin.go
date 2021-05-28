@@ -8,6 +8,15 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 )
 
+type PluginClient interface {
+	AddMessageHandler(client.ClientMessageType, func(e interface{}))
+	Close()
+	Dispatch(client.ClientMessageType, interface{})
+	Ready() <-chan bool
+	Run(context.Context)
+	SendMessage(interface{}) error
+}
+
 type Plugin struct {
 	Id                 string
 	TouchPortalVersion string
@@ -17,7 +26,7 @@ type Plugin struct {
 	settings interface{}
 
 	stopped chan bool
-	client  *client.Client
+	client  PluginClient
 }
 
 // NewPlugin creates, initialises and returns a TouchPortal plugin instance
@@ -26,6 +35,25 @@ func NewPlugin(ctx context.Context, id string) *Plugin {
 		Id:      id,
 		stopped: make(chan bool),
 		client:  client.NewClient(),
+	}
+
+	go func() {
+		p.client.Run(ctx)
+		p.stopped <- true
+	}()
+
+	<-p.client.Ready()
+
+	return p
+}
+
+// NewPluginWithClient creates, initialises and returns a TouchPortal plugin instance with a
+// custom client
+func NewPluginWithClient(ctx context.Context, cli PluginClient, id string) *Plugin {
+	p := &Plugin{
+		Id:      id,
+		stopped: make(chan bool),
+		client:  cli,
 	}
 
 	go func() {
