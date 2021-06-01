@@ -25,42 +25,30 @@ type Plugin struct {
 
 	settings interface{}
 
-	stopped chan bool
-	client  PluginClient
+	done   chan bool
+	client PluginClient
 }
 
 // NewPlugin creates, initialises and returns a TouchPortal plugin instance
 func NewPlugin(ctx context.Context, id string) *Plugin {
-	p := &Plugin{
-		Id:      id,
-		stopped: make(chan bool),
-		client:  client.NewClient(),
-	}
-
-	go func() {
-		p.client.Run(ctx)
-		p.stopped <- true
-	}()
-
-	<-p.client.Ready()
-
-	return p
+	return NewPluginWithClient(ctx, client.NewClient(), id)
 }
 
-// NewPluginWithClient creates, initialises and returns a TouchPortal plugin instance with a
-// custom client
+// NewPluginWithClient creates, initialises and returns a TouchPortal plugin instance allowing
+// the usage of a custom client instance
 func NewPluginWithClient(ctx context.Context, cli PluginClient, id string) *Plugin {
 	p := &Plugin{
-		Id:      id,
-		stopped: make(chan bool),
-		client:  cli,
+		Id:     id,
+		done:   make(chan bool),
+		client: cli,
 	}
 
 	go func() {
 		p.client.Run(ctx)
-		p.stopped <- true
+		p.done <- true
 	}()
 
+	// wait until client is ready to be used
 	<-p.client.Ready()
 
 	return p
@@ -72,7 +60,34 @@ func NewPluginWithClient(ctx context.Context, cli PluginClient, id string) *Plug
 func (p *Plugin) Register() error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	p.OnInfo(func(event client.InfoMessage) {
+	p.OnInfo(p.infoReceivedHandler(&wg))
+
+	p.OnClosePlugin(p.closePluginReceivedHandler())
+
+	err := p.client.SendMessage(client.NewPairMessage(p.Id))
+	if err != nil {
+		return err
+	}
+
+	wg.Wait()
+	return nil
+}
+
+// UpdateState allows you to send state update messages to TouchPortal
+func (p *Plugin) UpdateState(id string, value string) error {
+	msg := client.NewStateUpdateMessage(id, value)
+
+	return p.client.SendMessage(msg)
+}
+
+// Done provides an unbuffered, blocking, channel that can be used to verify
+// that the Plugin has finished it's run and cleaned up used resources.
+func (p *Plugin) Done() <-chan bool {
+	return p.done
+}
+
+func (p *Plugin) infoReceivedHandler(wg *sync.WaitGroup) func(event client.InfoMessage) {
+	return func(event client.InfoMessage) {
 		if event.Settings != nil {
 			p.client.Dispatch(client.MessageTypeSettings, client.SettingsMessage{
 				Message:   client.Message{Type: client.MessageTypeSettings},
@@ -85,30 +100,12 @@ func (p *Plugin) Register() error {
 		p.SdkVersion = event.SdkVersion
 
 		wg.Done()
-	})
+	}
+}
 
-	p.OnClosePlugin(func(event client.ClosePluginMessage) {
+func (p *Plugin) closePluginReceivedHandler() func(event client.ClosePluginMessage) {
+	return func(event client.ClosePluginMessage) {
 		log.Println("touchportal requested plugin shutdown. quitting...")
 		p.client.Close()
-	})
-
-	err := p.client.SendMessage(client.NewPairMessage(p.Id))
-	if err != nil {
-		return err
 	}
-
-	wg.Wait()
-	return nil
-}
-
-func (p *Plugin) UpdateState(id string, value string) error {
-	msg := client.NewStateUpdateMessage(id, value)
-
-	return p.client.SendMessage(msg)
-}
-
-// Done provides an unbuffered, blocking, channel that can be used to verify
-// that the Plugin has finished it's run and cleaned up used resources.
-func (p *Plugin) Done() <-chan bool {
-	return p.stopped
 }

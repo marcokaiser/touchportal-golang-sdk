@@ -1,4 +1,4 @@
-//go:generate enumer -type=PluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix Event
+//go:generate enumer -type=pluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix event
 
 package plugin
 
@@ -20,9 +20,11 @@ const (
 
 func (p *Plugin) on(event pluginEvent, handler func(event interface{})) {
 	t, err := client.ClientMessageTypeString(event.String())
-	if err == nil {
-		p.client.AddMessageHandler(t, handler)
+	if err != nil {
+		log.Fatalf("unable to create event type, %v", err)
 	}
+
+	p.client.AddMessageHandler(t, handler)
 }
 
 // OnAction allows the registration of an event handler to the "action" TouchPortal message.
