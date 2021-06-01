@@ -1,5 +1,3 @@
-//go:generate mockgen -destination=../mocks/plugin_mocks.go -package=mocks go.acpr.dev/touchportal-golang-sdk/pkg/plugin PluginClient
-
 package plugin
 
 import (
@@ -143,87 +141,93 @@ func TestPlugin_Register(t *testing.T) {
 }
 
 func TestPlugin_infoReceivedHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mc := mocks.NewMockPluginClient(ctrl)
+	t.Run("it provides a handler to deal with info messages from the client", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mc := mocks.NewMockPluginClient(ctrl)
 
-	p := &Plugin{
-		Id:     "test",
-		client: mc,
-	}
+		p := &Plugin{
+			Id:     "test",
+			client: mc,
+		}
 
-	m := client.InfoMessage{
-		Message:       client.Message{Type: client.MessageTypeInfo},
-		Version:       "version",
-		PluginVersion: 1,
-		SdkVersion:    1,
-	}
+		m := client.InfoMessage{
+			Message:       client.Message{Type: client.MessageTypeInfo},
+			Version:       "version",
+			PluginVersion: 1,
+			SdkVersion:    1,
+		}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	sut := p.infoReceivedHandler(&wg)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		sut := p.infoReceivedHandler(&wg)
 
-	sut(m)
+		sut(m)
 
-	if p.TouchPortalVersion != m.Version {
-		t.Errorf("Failed to set TouchPortal version want: %s got: %s", m.Version, p.TouchPortalVersion)
-	}
-	if p.PluginVersion != m.PluginVersion {
-		t.Errorf("Failed to set plugin version want: %d got: %d", m.PluginVersion, p.PluginVersion)
-	}
-	if p.SdkVersion != m.SdkVersion {
-		t.Errorf("Failed to set sdk version want: %d got: %d", m.SdkVersion, p.SdkVersion)
-	}
+		if p.TouchPortalVersion != m.Version {
+			t.Errorf("Failed to set TouchPortal version want: %s got: %s", m.Version, p.TouchPortalVersion)
+		}
+		if p.PluginVersion != m.PluginVersion {
+			t.Errorf("Failed to set plugin version want: %d got: %d", m.PluginVersion, p.PluginVersion)
+		}
+		if p.SdkVersion != m.SdkVersion {
+			t.Errorf("Failed to set sdk version want: %d got: %d", m.SdkVersion, p.SdkVersion)
+		}
+	})
 }
 
 func TestPlugin_infoReceivedHandler_withSettings(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mc := mocks.NewMockPluginClient(ctrl)
+	t.Run("it appropriately fires a dispatch when an info message contains a settings key", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mc := mocks.NewMockPluginClient(ctrl)
 
-	messageType, _ := client.ClientMessageTypeString("settings")
-	sType := reflect.TypeOf((*client.SettingsMessage)(nil)).Elem()
-	mc.EXPECT().Dispatch(messageType, gomock.AssignableToTypeOf(sType))
+		messageType, _ := client.ClientMessageTypeString("settings")
+		sType := reflect.TypeOf((*client.SettingsMessage)(nil)).Elem()
+		mc.EXPECT().Dispatch(messageType, gomock.AssignableToTypeOf(sType))
 
-	p := &Plugin{
-		Id:     "test",
-		client: mc,
-	}
+		p := &Plugin{
+			Id:     "test",
+			client: mc,
+		}
 
-	settings := []byte(`[{"Host": "localhost"},{"Port": "1234"}]`)
+		settings := []byte(`[{"Host": "localhost"},{"Port": "1234"}]`)
 
-	m := client.InfoMessage{
-		Message:       client.Message{Type: client.MessageTypeInfo},
-		Version:       "version",
-		PluginVersion: 1,
-		SdkVersion:    1,
-		Settings:      settings,
-	}
+		m := client.InfoMessage{
+			Message:       client.Message{Type: client.MessageTypeInfo},
+			Version:       "version",
+			PluginVersion: 1,
+			SdkVersion:    1,
+			Settings:      settings,
+		}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	sut := p.infoReceivedHandler(&wg)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		sut := p.infoReceivedHandler(&wg)
 
-	sut(m)
+		sut(m)
+	})
 }
 
 func TestPlugin_closePluginHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mc := mocks.NewMockPluginClient(ctrl)
+	t.Run("it provides a handler to deal with plugin shutdown requests", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mc := mocks.NewMockPluginClient(ctrl)
 
-	mc.EXPECT().Close()
+		mc.EXPECT().Close()
 
-	p := &Plugin{
-		Id:     "test",
-		client: mc,
-	}
+		p := &Plugin{
+			Id:     "test",
+			client: mc,
+		}
 
-	m := client.ClosePluginMessage{
-		Message:  client.Message{Type: client.MessageTypeClosePlugin},
-		PluginId: "test",
-	}
+		m := client.ClosePluginMessage{
+			Message:  client.Message{Type: client.MessageTypeClosePlugin},
+			PluginId: "test",
+		}
 
-	sut := p.closePluginReceivedHandler()
+		sut := p.closePluginReceivedHandler()
 
-	sut(m)
+		sut(m)
+	})
 }
 
 func registrationFailureMocks(t *testing.T, id string) PluginClient {

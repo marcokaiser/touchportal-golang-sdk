@@ -1,5 +1,3 @@
-//go:generate enumer -type=pluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix event
-
 package plugin
 
 import (
@@ -9,6 +7,7 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 )
 
+//go:generate enumer -type=pluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix event
 type pluginEvent int
 
 const (

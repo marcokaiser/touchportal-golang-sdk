@@ -1,3 +1,4 @@
+// Package plugin provides an event based sdk of the TouchPortal api.
 package plugin
 
 import (
@@ -8,6 +9,7 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
 )
 
+//go:generate mockgen -destination=../mocks/plugin_mocks.go -package=mocks . PluginClient
 type PluginClient interface {
 	AddMessageHandler(client.ClientMessageType, func(e interface{}))
 	Close()
