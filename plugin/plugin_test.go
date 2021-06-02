@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
-	"go.acpr.dev/touchportal-golang-sdk/pkg/mocks"
+	"go.acpr.dev/touchportal-golang-sdk/client"
+	"go.acpr.dev/touchportal-golang-sdk/mocks"
 )
 
 func TestNewPluginWithClient(t *testing.T) {

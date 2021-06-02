@@ -5,7 +5,7 @@ import (
 	"log"
 	"reflect"
 
-	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
+	"go.acpr.dev/touchportal-golang-sdk/client"
 )
 
 // SettingsUpdated implemented on the struct you use to power your plugins settings

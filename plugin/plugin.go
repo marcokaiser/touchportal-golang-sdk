@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
+	"go.acpr.dev/touchportal-golang-sdk/client"
 )
 
 //go:generate mockgen -destination=../mocks/plugin_mocks.go -package=mocks . PluginClient

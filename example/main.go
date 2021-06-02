@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/signal"
 
-	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
-	"go.acpr.dev/touchportal-golang-sdk/pkg/plugin"
+	"go.acpr.dev/touchportal-golang-sdk/client"
+	"go.acpr.dev/touchportal-golang-sdk/plugin"
 )
 
 type settings struct {

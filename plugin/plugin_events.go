@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"go.acpr.dev/touchportal-golang-sdk/pkg/client"
+	"go.acpr.dev/touchportal-golang-sdk/client"
 )
 
 //go:generate enumer -type=pluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix event
@@ -30,32 +30,14 @@ func (p *Plugin) on(event pluginEvent, handler func(event interface{})) {
 // The matching of the actionId parameter to the one sent by TouchPortal is handled for you
 // and your passed handler function will only be executed if it matches.
 func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId string) {
-	p.on(eventAction, func(e interface{}) {
-		action, ok := e.(client.ActionMessage)
-		if !ok {
-			return
-		}
-
-		if action.PluginId == p.Id && action.ActionId == actionId {
-			handler(action)
-		}
-	})
+	p.on(eventAction, p.onActionHandler(handler, actionId))
 }
 
 // OnClosePlugin allows the registration of an event handler to the "closePlugin" TouchPortal
 // message. A default handler is already in place to close down the plugin itself but you
 // may wish to add an additional hook so you can carry out other shutdown tasks.
 func (p *Plugin) OnClosePlugin(handler func(event client.ClosePluginMessage)) {
-	p.on(eventClosePlugin, func(e interface{}) {
-		action, ok := e.(client.ClosePluginMessage)
-		if !ok {
-			return
-		}
-
-		if action.PluginId == p.Id {
-			handler(e.(client.ClosePluginMessage))
-		}
-	})
+	p.on(eventClosePlugin, p.onClosePluginHandler(handler))
 }
 
 // OnInfo allows the registration of an event handler to the "info" TouchPortal message.
@@ -94,4 +76,30 @@ func (p *Plugin) onSettings(handler func(event client.SettingsMessage)) {
 
 		handler(msg)
 	})
+}
+
+func (p *Plugin) onActionHandler(handler func(event client.ActionMessage), actionId string) func(e interface{}) {
+	return func(e interface{}) {
+		action, ok := e.(client.ActionMessage)
+		if !ok {
+			return
+		}
+
+		if action.PluginId == p.Id && action.ActionId == actionId {
+			handler(action)
+		}
+	}
+}
+
+func (p *Plugin) onClosePluginHandler(handler func(event client.ClosePluginMessage)) func(e interface{}) {
+	return func(e interface{}) {
+		action, ok := e.(client.ClosePluginMessage)
+		if !ok {
+			return
+		}
+
+		if action.PluginId == p.Id {
+			handler(e.(client.ClosePluginMessage))
+		}
+	}
 }

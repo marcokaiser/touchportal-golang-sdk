@@ -12,6 +12,11 @@ generate:
 	go generate ./...
 .PHONY: generate
 
+install-tools:
+	go get -u github.com/noho-digital/enumer 
+	go get -u github.com/golang/mock
+.PHONY: install-tools
+
 clean:
 	rm -Rvf example/**/build
 .PHONY: clean
