@@ -9,8 +9,7 @@ import (
 	"go.acpr.dev/touchportal-golang-sdk/client"
 )
 
-//go:generate mockgen -destination=../mocks/plugin_mocks.go -package=mocks . PluginClient
-type PluginClient interface {
+type pluginClient interface {
 	AddMessageHandler(client.ClientMessageType, func(e interface{}))
 	Close()
 	Dispatch(client.ClientMessageType, interface{})
@@ -20,7 +19,7 @@ type PluginClient interface {
 }
 
 type Plugin struct {
-	Id                 string
+	ID                 string
 	TouchPortalVersion string
 	SdkVersion         int
 	PluginVersion      int
@@ -28,7 +27,7 @@ type Plugin struct {
 	settings interface{}
 
 	done   chan bool
-	client PluginClient
+	client pluginClient
 }
 
 // NewPlugin creates, initialises and returns a TouchPortal plugin instance
@@ -38,9 +37,9 @@ func NewPlugin(ctx context.Context, id string) *Plugin {
 
 // NewPluginWithClient creates, initialises and returns a TouchPortal plugin instance allowing
 // the usage of a custom client instance
-func NewPluginWithClient(ctx context.Context, cli PluginClient, id string) *Plugin {
+func NewPluginWithClient(ctx context.Context, cli pluginClient, id string) *Plugin {
 	p := &Plugin{
-		Id:     id,
+		ID:     id,
 		done:   make(chan bool),
 		client: cli,
 	}
@@ -66,12 +65,13 @@ func (p *Plugin) Register() error {
 
 	p.OnClosePlugin(p.closePluginReceivedHandler())
 
-	err := p.client.SendMessage(client.NewPairMessage(p.Id))
+	err := p.client.SendMessage(client.NewPairMessage(p.ID))
 	if err != nil {
 		return err
 	}
 
 	wg.Wait()
+
 	return nil
 }
 

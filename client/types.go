@@ -21,14 +21,14 @@ type Message struct {
 
 type ActionMessage struct {
 	Message
-	PluginId string          `json:"pluginId"`
-	ActionId string          `json:"actionId"`
+	PluginID string          `json:"pluginId"`
+	ActionID string          `json:"actionId"`
 	Data     json.RawMessage `json:"data"`
 }
 
 type ClosePluginMessage struct {
 	Message
-	PluginId string `json:"pluginId"`
+	PluginID string `json:"pluginId"`
 }
 
 type InfoMessage struct {
@@ -42,7 +42,7 @@ type InfoMessage struct {
 
 type pairMessage struct {
 	Message
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 type SettingsMessage struct {
@@ -53,7 +53,7 @@ type SettingsMessage struct {
 
 type stateUpdateMessage struct {
 	Message
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Value string `json:"value"`
 }
 
@@ -62,7 +62,7 @@ type stateUpdateMessage struct {
 func NewPairMessage(id string) *pairMessage {
 	return &pairMessage{
 		Message: Message{Type: MessageTypePair},
-		Id:      id,
+		ID:      id,
 	}
 }
 
@@ -71,7 +71,7 @@ func NewPairMessage(id string) *pairMessage {
 func NewStateUpdateMessage(id string, value string) *stateUpdateMessage {
 	return &stateUpdateMessage{
 		Message: Message{Type: MessageTypeStateUpdate},
-		Id:      id,
+		ID:      id,
 		Value:   value,
 	}
 }

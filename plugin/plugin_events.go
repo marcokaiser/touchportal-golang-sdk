@@ -29,8 +29,8 @@ func (p *Plugin) on(event pluginEvent, handler func(event interface{})) {
 // OnAction allows the registration of an event handler to the "action" TouchPortal message.
 // The matching of the actionId parameter to the one sent by TouchPortal is handled for you
 // and your passed handler function will only be executed if it matches.
-func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionId string) {
-	p.on(eventAction, p.onActionHandler(handler, actionId))
+func (p *Plugin) OnAction(handler func(event client.ActionMessage), actionID string) {
+	p.on(eventAction, p.onActionHandler(handler, actionID))
 }
 
 // OnClosePlugin allows the registration of an event handler to the "closePlugin" TouchPortal
@@ -78,14 +78,14 @@ func (p *Plugin) onSettings(handler func(event client.SettingsMessage)) {
 	})
 }
 
-func (p *Plugin) onActionHandler(handler func(event client.ActionMessage), actionId string) func(e interface{}) {
+func (p *Plugin) onActionHandler(handler func(event client.ActionMessage), actionID string) func(e interface{}) {
 	return func(e interface{}) {
 		action, ok := e.(client.ActionMessage)
 		if !ok {
 			return
 		}
 
-		if action.PluginId == p.Id && action.ActionId == actionId {
+		if action.PluginID == p.ID && action.ActionID == actionID {
 			handler(action)
 		}
 	}
@@ -98,7 +98,7 @@ func (p *Plugin) onClosePluginHandler(handler func(event client.ClosePluginMessa
 			return
 		}
 
-		if action.PluginId == p.Id {
+		if action.PluginID == p.ID {
 			handler(e.(client.ClosePluginMessage))
 		}
 	}

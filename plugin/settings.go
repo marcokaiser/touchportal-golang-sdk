@@ -50,7 +50,10 @@ func (p *Plugin) Settings(s interface{}) {
 
 		kind := field.Type().Kind()
 		if kind != reflect.String && kind != reflect.Int {
-			log.Panicf("it is only possible to have settings that are strings or integers; field %s is of type %s\n", rvs.Type().Field(i).Name, kind)
+			log.Panicf(
+				"it is only possible to have settings that are strings or integers; field %s is of type %s\n",
+				rvs.Type().Field(i).Name,
+				kind)
 		}
 	}
 

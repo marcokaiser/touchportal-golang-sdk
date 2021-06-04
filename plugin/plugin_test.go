@@ -1,3 +1,5 @@
+//go:generate mockgen -source=plugin.go -destination=mocks/plugin.go -mock_names pluginClient=MockPluginClient pluginClient
+
 package plugin
 
 import (
@@ -9,91 +11,93 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"go.acpr.dev/touchportal-golang-sdk/client"
-	"go.acpr.dev/touchportal-golang-sdk/mocks"
+	. "go.acpr.dev/touchportal-golang-sdk/plugin/mocks"
 )
 
 func TestNewPluginWithClient(t *testing.T) {
-	t.Run("it can create a test plugin with custom client", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		mc.EXPECT().Run(ctx)
+	ctx := context.Background()
 
-		ready := make(chan bool)
-		go func() {
-			// we need to wait till marking the client ready so the
-			// goroutine has a chance to process the Run expectation
-			time.Sleep(time.Microsecond * 100)
-			ready <- true
-		}()
-		mc.EXPECT().Ready().Return(ready)
+	mc.EXPECT().Run(ctx)
 
-		sut := NewPluginWithClient(ctx, mc, "test")
+	ready := make(chan bool)
+	go func(ready chan bool) {
+		// we need to wait till marking the client ready so the
+		// goroutine has a chance to process the Run expectation
+		time.Sleep(time.Microsecond * 100)
+		ready <- true
+	}(ready)
+	mc.EXPECT().Ready().Return(ready)
 
-		if sut.Id != "test" {
-			t.Fail()
-		}
-	})
+	sut := NewPluginWithClient(ctx, mc, "test")
+	assert.Equal(t, "test", sut.ID)
 }
 
 func TestPlugin_UpdateState(t *testing.T) {
-	t.Run("it can update the plugins state", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		mc.
-			EXPECT().
-			SendMessage(
-				client.NewStateUpdateMessage("testState", "testStateValue"),
-			).
-			Return(nil)
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		p := &Plugin{
-			Id:     "test",
-			client: mc,
-		}
+	mc.
+		EXPECT().
+		SendMessage(
+			client.NewStateUpdateMessage("testState", "testStateValue"),
+		).
+		Return(nil)
 
-		p.UpdateState("testState", "testStateValue")
-	})
+	p := &Plugin{
+		ID:     "test",
+		client: mc,
+	}
+
+	err := p.UpdateState("testState", "testStateValue")
+	assert.Nil(t, err, "failed to update state err: %v", err)
 }
 
 func TestPlugin_Done(t *testing.T) {
-	t.Run("it provides a way to know the plugin is done running", func(t *testing.T) {
-		p := &Plugin{
-			done: make(chan bool),
-		}
+	t.Parallel()
 
-		wait := make(chan bool)
-		go func() {
-			defer close(wait)
+	p := &Plugin{
+		done: make(chan bool),
+	}
 
-			// the actual function call we're testing
-			<-p.Done()
-		}()
+	wait := make(chan bool)
+	go func(wait chan bool) {
+		defer close(wait)
 
-		// something changes the stop status inside the plugin
-		p.done <- true
+		// the actual function call we're testing
+		<-p.Done()
+	}(wait)
 
-		select {
-		case <-wait:
-		case <-time.After(100 * time.Millisecond):
-			t.Fail()
-		}
-	})
+	// something changes the stop status inside the plugin
+	p.done <- true
+
+	select {
+	case <-wait:
+	case <-time.After(100 * time.Millisecond):
+		t.Error("plugin not stopped before timeout")
+	}
 }
 
 func TestPlugin_Register(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
-		Id                 string
+		ID                 string
 		TouchPortalVersion string
 		SdkVersion         int
 		PluginVersion      int
 
-		Client PluginClient
+		Client pluginClient
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -102,7 +106,7 @@ func TestPlugin_Register(t *testing.T) {
 		{
 			name: "it successfully registers a plugin instance",
 			fields: fields{
-				Id:                 "test",
+				ID:                 "test",
 				TouchPortalVersion: "version",
 				SdkVersion:         1,
 				PluginVersion:      1,
@@ -113,16 +117,20 @@ func TestPlugin_Register(t *testing.T) {
 		{
 			name: "it handles the failure to send a registration request",
 			fields: fields{
-				Id:     "test",
+				ID:     "test",
 				Client: registrationFailureMocks(t, "test"),
 			},
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := &Plugin{
-				Id:     tt.fields.Id,
+				ID:     tt.fields.ID,
 				client: tt.fields.Client,
 			}
 
@@ -131,9 +139,8 @@ func TestPlugin_Register(t *testing.T) {
 			go func() {
 				defer wg.Done()
 
-				if err := p.Register(); (err != nil) != tt.wantErr {
-					t.Errorf("Plugin.Register() error = %v, wantErr %v", err, tt.wantErr)
-				}
+				err := p.Register()
+				assert.Equal(t, tt.wantErr, (err != nil), "plugin register failed to match expected result")
 			}()
 			wg.Wait()
 		})
@@ -141,98 +148,106 @@ func TestPlugin_Register(t *testing.T) {
 }
 
 func TestPlugin_infoReceivedHandler(t *testing.T) {
-	t.Run("it provides a handler to deal with info messages from the client", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		p := &Plugin{
-			Id:     "test",
-			client: mc,
-		}
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		m := client.InfoMessage{
-			Message:       client.Message{Type: client.MessageTypeInfo},
-			Version:       "version",
-			PluginVersion: 1,
-			SdkVersion:    1,
-		}
+	p := &Plugin{
+		ID:     "test",
+		client: mc,
+	}
 
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		sut := p.infoReceivedHandler(&wg)
+	m := client.InfoMessage{
+		Message:       client.Message{Type: client.MessageTypeInfo},
+		Version:       "version",
+		PluginVersion: 1,
+		SdkVersion:    3,
+	}
 
-		sut(m)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	sut := p.infoReceivedHandler(&wg)
 
-		if p.TouchPortalVersion != m.Version {
-			t.Errorf("Failed to set TouchPortal version want: %s got: %s", m.Version, p.TouchPortalVersion)
-		}
-		if p.PluginVersion != m.PluginVersion {
-			t.Errorf("Failed to set plugin version want: %d got: %d", m.PluginVersion, p.PluginVersion)
-		}
-		if p.SdkVersion != m.SdkVersion {
-			t.Errorf("Failed to set sdk version want: %d got: %d", m.SdkVersion, p.SdkVersion)
-		}
-	})
+	sut(m)
+
+	assert.Equal(t, m.Version, p.TouchPortalVersion,
+		"Failed to set TouchPortal version want %s got %s",
+		m.Version,
+		p.TouchPortalVersion,
+	)
+
+	assert.Equal(t, m.PluginVersion, p.PluginVersion,
+		"Failed to set plugin version want %d got %d",
+		m.PluginVersion,
+		p.PluginVersion,
+	)
+
+	assert.Equal(t, m.SdkVersion, p.SdkVersion,
+		"Failed to set sdk version want %d got %d",
+		m.SdkVersion,
+		p.SdkVersion,
+	)
 }
 
 func TestPlugin_infoReceivedHandler_withSettings(t *testing.T) {
-	t.Run("it appropriately fires a dispatch when an info message contains a settings key", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		messageType, _ := client.ClientMessageTypeString("settings")
-		sType := reflect.TypeOf((*client.SettingsMessage)(nil)).Elem()
-		mc.EXPECT().Dispatch(messageType, gomock.AssignableToTypeOf(sType))
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		p := &Plugin{
-			Id:     "test",
-			client: mc,
-		}
+	messageType, _ := client.ClientMessageTypeString("settings")
+	sType := reflect.TypeOf((*client.SettingsMessage)(nil)).Elem()
+	mc.EXPECT().Dispatch(messageType, gomock.AssignableToTypeOf(sType))
 
-		settings := []byte(`[{"Host": "localhost"},{"Port": "1234"}]`)
+	p := &Plugin{
+		ID:     "test",
+		client: mc,
+	}
 
-		m := client.InfoMessage{
-			Message:       client.Message{Type: client.MessageTypeInfo},
-			Version:       "version",
-			PluginVersion: 1,
-			SdkVersion:    1,
-			Settings:      settings,
-		}
+	settings := []byte(`[{"Host": "localhost"},{"Port": "1234"}]`)
 
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		sut := p.infoReceivedHandler(&wg)
+	m := client.InfoMessage{
+		Message:       client.Message{Type: client.MessageTypeInfo},
+		Version:       "version",
+		PluginVersion: 1,
+		SdkVersion:    1,
+		Settings:      settings,
+	}
 
-		sut(m)
-	})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	sut := p.infoReceivedHandler(&wg)
+
+	sut(m)
 }
 
 func TestPlugin_closePluginHandler(t *testing.T) {
-	t.Run("it provides a handler to deal with plugin shutdown requests", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		mc.EXPECT().Close()
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		p := &Plugin{
-			Id:     "test",
-			client: mc,
-		}
+	mc.EXPECT().Close()
 
-		m := client.ClosePluginMessage{
-			Message:  client.Message{Type: client.MessageTypeClosePlugin},
-			PluginId: "test",
-		}
+	p := &Plugin{
+		ID:     "test",
+		client: mc,
+	}
 
-		sut := p.closePluginReceivedHandler()
+	m := client.ClosePluginMessage{
+		Message:  client.Message{Type: client.MessageTypeClosePlugin},
+		PluginID: "test",
+	}
 
-		sut(m)
-	})
+	sut := p.closePluginReceivedHandler()
+
+	sut(m)
 }
 
-func registrationFailureMocks(t *testing.T, id string) PluginClient {
+func registrationFailureMocks(t *testing.T, id string) pluginClient {
 	ctrl := gomock.NewController(t)
-	mc := mocks.NewMockPluginClient(ctrl)
+	mc := NewMockPluginClient(ctrl)
 
 	// register should setup info handler to set registration info
 	messageType, _ := client.ClientMessageTypeString("info")
@@ -251,9 +266,9 @@ func registrationFailureMocks(t *testing.T, id string) PluginClient {
 	return mc
 }
 
-func registrationSuccessMocks(t *testing.T, id string, version string, pluginVersion int, sdkVersion int) PluginClient {
+func registrationSuccessMocks(t *testing.T, id string, version string, pluginVersion int, sdkVersion int) pluginClient {
 	ctrl := gomock.NewController(t)
-	mc := mocks.NewMockPluginClient(ctrl)
+	mc := NewMockPluginClient(ctrl)
 
 	infoReceived := make(chan bool)
 
@@ -291,10 +306,7 @@ func registrationSuccessMocks(t *testing.T, id string, version string, pluginVer
 		EXPECT().
 		SendMessage(pairMessage).
 		DoAndReturn(func(m interface{}) error {
-			if !reflect.DeepEqual(pairMessage, m) {
-				msg := reflect.TypeOf(m).Elem().String()
-				t.Errorf("incorrect pairing message sent want: &{client.pairMessage} got: ${%s}", msg)
-			}
+			assert.IsType(t, pairMessage, m, "incorrect messsage type sent for pairing")
 
 			// this mocks the fact TouchPortal has responded to our registration
 			close(infoReceived)

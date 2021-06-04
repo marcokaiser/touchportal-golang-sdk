@@ -6,12 +6,17 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"go.acpr.dev/touchportal-golang-sdk/client"
-	"go.acpr.dev/touchportal-golang-sdk/mocks"
+	. "go.acpr.dev/touchportal-golang-sdk/plugin/mocks"
 )
 
 func TestActionEnums(t *testing.T) {
+	t.Parallel()
+
 	for _, enum := range pluginEventValues() {
-		t.Run("its events match existing client messages", func(t *testing.T) {
+		enum := enum
+		t.Run(enum.String()+" matches existing client messages", func(t *testing.T) {
+			t.Parallel()
+
 			_, err := client.ClientMessageTypeString(enum.String())
 			if err != nil {
 				t.Errorf("action type of %v not found as client message type", enum)
@@ -21,66 +26,68 @@ func TestActionEnums(t *testing.T) {
 }
 
 func TestPlugin_on(t *testing.T) {
-	t.Run("it registers a handler for an event with the client", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		mc := mocks.NewMockPluginClient(ctrl)
+	t.Parallel()
 
-		messageType, _ := client.ClientMessageTypeString("info")
-		messageHandler := func(event interface{}) {}
-		mc.EXPECT().AddMessageHandler(messageType, gomock.AssignableToTypeOf(reflect.TypeOf(messageHandler)))
+	ctrl := gomock.NewController(t)
+	mc := NewMockPluginClient(ctrl)
 
-		p := &Plugin{
-			client: mc,
-		}
+	messageType, _ := client.ClientMessageTypeString("info")
+	messageHandler := func(event interface{}) {}
+	mc.EXPECT().AddMessageHandler(messageType, gomock.AssignableToTypeOf(reflect.TypeOf(messageHandler)))
 
-		p.on(eventInfo, func(e interface{}) {})
-	})
+	p := &Plugin{
+		client: mc,
+	}
+
+	p.on(eventInfo, func(e interface{}) {})
 }
 
 func TestPlugin_onActionHandler(t *testing.T) {
-	t.Run("it correctly validates and acts upon appropriate client messages", func(t *testing.T) {
-		msg := client.ActionMessage{
-			PluginId: "testPlugin",
-			ActionId: "test",
-		}
+	t.Parallel()
 
-		var called bool = false
-		handler := func(event client.ActionMessage) {
-			called = true
-		}
-		actionId := "test"
+	msg := client.ActionMessage{
+		PluginID: "testPlugin",
+		ActionID: "test",
+	}
 
-		p := &Plugin{
-			Id: "testPlugin",
-		}
+	var called bool = false
 
-		p.onActionHandler(handler, actionId)(msg)
+	handler := func(event client.ActionMessage) {
+		called = true
+	}
+	actionID := "test"
 
-		if !called {
-			t.Error("handler function not called despite good data")
-		}
-	})
+	p := &Plugin{
+		ID: "testPlugin",
+	}
+
+	p.onActionHandler(handler, actionID)(msg)
+
+	if !called {
+		t.Error("handler function not called despite good data")
+	}
 }
 
 func TestPlugin_onClosePluginHandler(t *testing.T) {
-	t.Run("it correctly validates and acts upon appropriate client messages", func(t *testing.T) {
-		msg := client.ClosePluginMessage{
-			PluginId: "testPlugin",
-		}
+	t.Parallel()
 
-		var called bool = false
-		handler := func(event client.ClosePluginMessage) {
-			called = true
-		}
+	msg := client.ClosePluginMessage{
+		PluginID: "testPlugin",
+	}
 
-		p := &Plugin{
-			Id: "testPlugin",
-		}
+	var called bool = false
 
-		p.onClosePluginHandler(handler)(msg)
+	handler := func(event client.ClosePluginMessage) {
+		called = true
+	}
 
-		if !called {
-			t.Error("handler function not called despite good data")
-		}
-	})
+	p := &Plugin{
+		ID: "testPlugin",
+	}
+
+	p.onClosePluginHandler(handler)(msg)
+
+	if !called {
+		t.Error("handler function not called despite good data")
+	}
 }

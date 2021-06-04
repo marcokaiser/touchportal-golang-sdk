@@ -69,6 +69,7 @@ func (c *Client) Run(ctx context.Context) {
 	// start the message handling stack
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
+
 	go c.fetchIncomingMessage(wg)
 	go c.processIncomingMessages(wg)
 
@@ -98,7 +99,7 @@ func (c *Client) Dispatch(mType ClientMessageType, event interface{}) {
 // SendMessage will send a JSON serialised version of the passed interface{}
 // to TouchPortal, returning an error if it was unable to complete the task
 func (c *Client) SendMessage(m interface{}) error {
-	return c.socket.SendMessage(toJson(m))
+	return c.socket.SendMessage(toJSON(m))
 }
 
 func (c *Client) fetchIncomingMessage(wg *sync.WaitGroup) {
@@ -136,6 +137,7 @@ func (c *Client) processIncomingMessages(wg *sync.WaitGroup) {
 
 func (c *Client) processMessage(msg json.RawMessage) {
 	var m Message
+
 	err := json.Unmarshal(msg, &m)
 	if err != nil {
 		log.Printf("unable to marshall message and discern type: %v\n", err)
@@ -143,6 +145,7 @@ func (c *Client) processMessage(msg json.RawMessage) {
 	}
 
 	mType := ClientMessageType(m.Type)
+
 	processor, ok := c.processors[mType]
 	if !ok {
 		log.Printf("type of message \"%s\" not currently handled\n", mType)
@@ -158,7 +161,7 @@ func (c *Client) processMessage(msg json.RawMessage) {
 	c.Dispatch(mType, pm)
 }
 
-func toJson(msg interface{}) []byte {
+func toJSON(msg interface{}) []byte {
 	msgBytes, err := json.Marshal(msg)
 	if err != nil {
 		log.Fatalf("unable to marshal message struct to string %v", msg)

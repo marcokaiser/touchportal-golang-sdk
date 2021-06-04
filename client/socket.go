@@ -29,7 +29,10 @@ func (s *Socket) GetMessage() ([]byte, error) {
 	// handle retry backoff
 	time.Sleep(time.Duration(300*time.Millisecond) * time.Duration(s.retries))
 
-	s.conn.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
+	err := s.conn.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
+	if err != nil {
+		log.Printf("error whilst setting connection read deadline: %v", err)
+	}
 
 	bytes, err := s.reader.ReadBytes('\n')
 	if err != nil {
@@ -45,6 +48,7 @@ func (s *Socket) GetMessage() ([]byte, error) {
 	}
 
 	s.retries = 0
+
 	return bytes, nil
 }
 
