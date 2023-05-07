@@ -5,7 +5,7 @@ import (
 	"log"
 	"reflect"
 
-	"go.acpr.dev/touchportal-golang-sdk/client"
+	"github.com/marcokaiser/touchportal-golang-sdk/client"
 )
 
 // SettingsUpdated implemented on the struct you use to power your plugins settings
@@ -22,19 +22,19 @@ type SettingsUpdated interface {
 //
 // Currently only string and int types are supported
 //
-//    type settings struct {
-//        Host string `json:"Host"`
-//        Port int    `json:"Port,string"`
-//    }
+//	type settings struct {
+//	    Host string `json:"Host"`
+//	    Port int    `json:"Port,string"`
+//	}
 //
-//    func main() {
-//        p := NewPlugin(...)
-//        s := &settings{}
+//	func main() {
+//	    p := NewPlugin(...)
+//	    s := &settings{}
 //
-//        p.Settings(s)
-//        p.Register()
-//        // p will now contain any settings that TouchPortal returned
-//    }
+//	    p.Settings(s)
+//	    p.Register()
+//	    // p will now contain any settings that TouchPortal returned
+//	}
 //
 // Interestingly it's important to note that TouchPortal string encodes both string and integer values
 // so when Unmarshaling to an int you will need to ensure you mark it as ",string" as shown above.

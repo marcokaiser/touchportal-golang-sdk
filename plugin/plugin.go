@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"go.acpr.dev/touchportal-golang-sdk/client"
+	"github.com/marcokaiser/touchportal-golang-sdk/client"
 )
 
 type pluginClient interface {

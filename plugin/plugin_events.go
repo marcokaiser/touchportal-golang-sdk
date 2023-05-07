@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"go.acpr.dev/touchportal-golang-sdk/client"
+	"github.com/marcokaiser/touchportal-golang-sdk/client"
 )
 
 //go:generate enumer -type=pluginEvent -json -transform=lower-camel -output plugin_events_string.go  -trimprefix event

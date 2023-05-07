@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/marcokaiser/touchportal-golang-sdk/client"
+	. "github.com/marcokaiser/touchportal-golang-sdk/plugin/mocks"
 	"github.com/stretchr/testify/assert"
-	"go.acpr.dev/touchportal-golang-sdk/client"
-	. "go.acpr.dev/touchportal-golang-sdk/plugin/mocks"
 )
 
 func TestNewPluginWithClient(t *testing.T) {
